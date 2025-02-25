@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dialogue_styles import gyozen_style  # Импорт стиля из dialogue_styles.py
 from config import TELEGRAM_TOKEN, DEEPSEEK_API_KEY  # Импорт ключей из config.py
+import re  # Для проверки слов в любом регистре
 
 # Инициализация клиента для DeepSeek
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
@@ -27,11 +28,20 @@ def get_response(prompt):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Я бот в стиле Гёдзена, использующий DeepSeek. Задай мне любой вопрос.")
 
-# Обработка сообщений (только DeepSeek)
+# Обработка сообщений (разделение на ЛС и группы)
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_message = update.message.text
-    response = get_response(user_message)
-    await update.message.reply_text(response)
+    
+    # Проверка, откуда пришло сообщение
+    if update.message.chat.type == "private":
+        # Личное сообщение — отвечаем всегда
+        response = get_response(user_message)
+        await update.message.reply_text(response)
+    else:
+        # Групповой чат — отвечаем только если есть "Гедзен" или "Гёдзен"
+        if re.search(r'\bгедзен\b', user_message, re.IGNORECASE) or re.search(r'\bгёдзен\b', user_message, re.IGNORECASE):
+            response = get_response(user_message)
+            await update.message.reply_text(response)
 
 # Основная функция
 def main():

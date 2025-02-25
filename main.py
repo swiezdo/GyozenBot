@@ -5,10 +5,13 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dialogue_styles import gyozen_style  # Импорт стиля из dialogue_styles.py
 from config import TELEGRAM_TOKEN, DEEPSEEK_API_KEY  # Импорт ключей из config.py
-import re  # Для проверки слов в любом регистре
+import time  # Для проверки времени сообщений
 
 # Инициализация клиента для DeepSeek
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
+
+# Порог времени в секундах (сообщения старше этого времени игнорируются)
+TIME_THRESHOLD = 60  # 60 секунд
 
 # Функция для получения ответа от DeepSeek с учётом стиля Гёдзена
 def get_response(prompt):
@@ -28,20 +31,19 @@ def get_response(prompt):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Я бот в стиле Гёдзена, использующий DeepSeek. Задай мне любой вопрос.")
 
-# Обработка сообщений (разделение на ЛС и группы)
+# Обработка сообщений (только DeepSeek)
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_message = update.message.text
+    # Проверка времени сообщения
+    message_time = update.message.date.timestamp()  # Время сообщения в timestamp
+    current_time = time.time()  # Текущее время в timestamp
+
+    # Если сообщение старше TIME_THRESHOLD секунд, игнорируем его
+    if current_time - message_time > TIME_THRESHOLD:
+        return
     
-    # Проверка, откуда пришло сообщение
-    if update.message.chat.type == "private":
-        # Личное сообщение — отвечаем всегда
-        response = get_response(user_message)
-        await update.message.reply_text(response)
-    else:
-        # Групповой чат — отвечаем только если есть "Гедзен" или "Гёдзен"
-        if re.search(r'\bгедзен\b', user_message, re.IGNORECASE) or re.search(r'\bгёдзен\b', user_message, re.IGNORECASE):
-            response = get_response(user_message)
-            await update.message.reply_text(response)
+    user_message = update.message.text
+    response = get_response(user_message)
+    await update.message.reply_text(response)
 
 # Основная функция
 def main():

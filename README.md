@@ -7,11 +7,15 @@ GyozenBot — это Telegram-бот, говорящий в стиле Гёдз�
 ## 📋 Установка
 
 1. Клонируйте репозиторий:
+    ```bash
     git clone https://github.com/swiezdo/GyozenBot.git
     cd GyozenBot
+    ```
 
 2. Установите зависимости:
+    ```bash
     pip install -r requirements.txt
+    ```
 
 ---
 
@@ -19,5 +23,6 @@ GyozenBot — это Telegram-бот, говорящий в стиле Гёдз�
 
 Перед запуском нужно создать файл `config.py` и добавить в него следующие строки:
 
+```python
 TELEGRAM_TOKEN = "ВАШ_TELEGRAM_TOKEN"
 DEEPSEEK_API_KEY = "ВАШ_DEEPSEEK_API_KEY"

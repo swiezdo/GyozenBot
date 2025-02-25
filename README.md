@@ -36,10 +36,11 @@ python main.py
 ```
 
 ## 🛠️ Используемые технологии
-
+```
 1.Python
 2.Telegram Bot API
 3.DeepSeek API
+```
 
 ---
 

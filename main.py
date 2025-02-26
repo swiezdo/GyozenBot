@@ -46,7 +46,6 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(response)
 
 # Основная функция
-# Проверка
 def main():
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 

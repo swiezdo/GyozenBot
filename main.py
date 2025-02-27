@@ -6,12 +6,16 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from dialogue_styles import gyozen_style  # Импорт стиля из dialogue_styles.py
 from config import TELEGRAM_TOKEN, DEEPSEEK_API_KEY  # Импорт ключей из config.py
 import time  # Для проверки времени сообщений
+import re  # Для проверки слов в сообщениях
 
 # Инициализация клиента для DeepSeek
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 # Порог времени в секундах (сообщения старше этого времени игнорируются)
 TIME_THRESHOLD = 60  # 60 секунд
+
+# Регулярное выражение для проверки слов в любом регистре
+PATTERN = re.compile(r"г[ёе]д[зс][еэ]н", re.IGNORECASE)
 
 # Функция для получения ответа от DeepSeek с учётом стиля Гёдзена
 def get_response(prompt):
@@ -22,7 +26,7 @@ def get_response(prompt):
             {"role": "user", "content": prompt}
         ],
         stream=False,
-        temperature=1.4,
+        temperature=1.3,
         max_tokens=1000
     )
     return response.choices[0].message.content.strip()
@@ -40,8 +44,16 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Если сообщение старше TIME_THRESHOLD секунд, игнорируем его
     if current_time - message_time > TIME_THRESHOLD:
         return
-    
+
     user_message = update.message.text
+    
+    # Проверяем тип чата
+    if update.message.chat.type in ["group", "supergroup"]:
+        # В группах отвечаем только если есть слово "Гёдзен", "Гедзен", "Гёдзэн" или "Гедзэн" в любом регистре
+        if not PATTERN.search(user_message):
+            return
+
+    # В личных сообщениях отвечаем на любое сообщение
     response = get_response(user_message)
     await update.message.reply_text(response)
 
@@ -56,3 +68,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

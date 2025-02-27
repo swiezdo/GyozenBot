@@ -119,6 +119,95 @@ async def kick_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         await update.message.reply_text(f"Не удалось исключить {user_to_kick.full_name}. Ошибка: {e}")
 
+        # Команда /mute для отключения возможности отправки сообщений (reply)
+async def mute_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+
+    # Получаем список администраторов и владельца группы
+    admins = await context.bot.get_chat_administrators(chat_id)
+    is_admin = False
+    
+    # Проверяем, является ли пользователь администратором или владельцем группы
+    for admin in admins:
+        if admin.user.id == user_id:
+            is_admin = True
+            break
+
+    # Если пользователь не администратор и не владелец группы — отказ
+    if not is_admin:
+        await update.message.reply_text("У вас нет прав администратора или владельца группы.")
+        return
+    
+    # Проверяем, используется ли команда в ответе на сообщение (reply)
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Эту команду нужно использовать в ответе на сообщение.")
+        return
+
+    # Получаем пользователя, на сообщение которого был сделан ответ
+    user_to_mute = update.message.reply_to_message.from_user
+    
+    # Проверяем, не является ли пользователь администратором или владельцем группы
+    for admin in admins:
+        if admin.user.id == user_to_mute.id:
+            await update.message.reply_text("Нельзя замутить администратора или владельца группы.")
+            return
+    
+    # Проверяем, указано ли время mute
+    duration = int(context.args[0]) if context.args else 86400  # По умолчанию 24 часа
+    until_date = int(time.time()) + duration
+    
+    # Выполняем mute
+    try:
+        await context.bot.restrict_chat_member(
+            chat_id, 
+            user_to_mute.id,
+            permissions={'can_send_messages': False},
+            until_date=until_date
+        )
+        await update.message.reply_text(f"{user_to_mute.full_name} был замучен на {duration} секунд.")
+    except Exception as e:
+        await update.message.reply_text(f"Не удалось замутить {user_to_mute.full_name}. Ошибка: {e}")
+
+        # Команда /unmute для восстановления возможности отправки сообщений (reply)
+async def unmute_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
+    user_id = update.effective_user.id
+
+    # Получаем список администраторов и владельца группы
+    admins = await context.bot.get_chat_administrators(chat_id)
+    is_admin = False
+    
+    # Проверяем, является ли пользователь администратором или владельцем группы
+    for admin in admins:
+        if admin.user.id == user_id:
+            is_admin = True
+            break
+
+    # Если пользователь не администратор и не владелец группы — отказ
+    if not is_admin:
+        await update.message.reply_text("У вас нет прав администратора или владельца группы.")
+        return
+    
+    # Проверяем, используется ли команда в ответе на сообщение (reply)
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Эту команду нужно использовать в ответе на сообщение.")
+        return
+
+    # Получаем пользователя, на сообщение которого был сделан ответ
+    user_to_unmute = update.message.reply_to_message.from_user
+    
+    # Выполняем unmute (восстанавливаем все права)
+    try:
+        await context.bot.restrict_chat_member(
+            chat_id, 
+            user_to_unmute.id,
+            permissions={'can_send_messages': True}
+        )
+        await update.message.reply_text(f"{user_to_unmute.full_name} был размучен.")
+    except Exception as e:
+        await update.message.reply_text(f"Не удалось размутить {user_to_unmute.full_name}. Ошибка: {e}")
+
 # Обработка сообщений (только DeepSeek)
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Проверка времени сообщения
@@ -147,7 +236,9 @@ def main():
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("ban", ban_user))
-    application.add_handler(CommandHandler("kick", kick_user))  # Добавили обработчик команды /kick
+    application.add_handler(CommandHandler("kick", kick_user))
+    application.add_handler(CommandHandler("mute", mute_user))  # Добавили /mute
+    application.add_handler(CommandHandler("unmute", unmute_user))  # Добавили /unmute
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, respond))
 
     application.run_polling()

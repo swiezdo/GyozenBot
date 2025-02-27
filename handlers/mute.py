@@ -48,6 +48,6 @@ async def mute_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             permissions={'can_send_messages': False},
             until_date=until_date
         )
-        await update.message.reply_text(f"{user_to_mute.full_name} был замучен на {duration} секунд.")
+        await update.message.reply_text(f"{user_to_mute.full_name} был(-а) замучен на {duration} секунд.")
     except Exception as e:
         await update.message.reply_text(f"Не удалось замутить {user_to_mute.full_name}. Ошибка: {e}")

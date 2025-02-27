@@ -39,6 +39,6 @@ async def kick_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         await context.bot.ban_chat_member(chat_id, user_to_kick.id)
         await context.bot.unban_chat_member(chat_id, user_to_kick.id)
-        await update.message.reply_text(f"{user_to_kick.full_name} был исключён.")
+        await update.message.reply_text(f"{user_to_kick.full_name} был(-а) исключён.")
     except Exception as e:
         await update.message.reply_text(f"Не удалось исключить {user_to_kick.full_name}. Ошибка: {e}")

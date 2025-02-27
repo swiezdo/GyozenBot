@@ -38,6 +38,6 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Выполняем бан
     try:
         await context.bot.ban_chat_member(chat_id, user_to_ban.id)
-        await update.message.reply_text(f"{user_to_ban.full_name} был забанен.")
+        await update.message.reply_text(f"{user_to_ban.full_name} был(-а) забанен.")
     except Exception as e:
         await update.message.reply_text(f"Не удалось забанить {user_to_ban.full_name}. Ошибка: {e}")

@@ -37,6 +37,6 @@ async def unmute_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             user_to_unmute.id,
             permissions={'can_send_messages': True}
         )
-        await update.message.reply_text(f"{user_to_unmute.full_name} был размучен.")
+        await update.message.reply_text(f"{user_to_unmute.full_name} был(-а) размучен.")
     except Exception as e:
         await update.message.reply_text(f"Не удалось размутить {user_to_unmute.full_name}. Ошибка: {e}")

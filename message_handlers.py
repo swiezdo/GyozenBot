@@ -1,20 +1,14 @@
 import time
 import random
 import re
-from aiogram import Router
 from aiogram.types import Message
-from aiogram.filters import Command
 from deepseek_client import get_response
 from waiting_phrases import WAITING_PHRASES
-
-# Создаём роутер (для регистрации хендлеров)
-router = Router()
 
 # === Конфигурация ===
 TIME_THRESHOLD = 60  # 60 секунд
 PATTERN = re.compile(r"г[ёе]д[зс][еэ]н", re.IGNORECASE)
 
-@router.message(Command("start"))
 async def start(message: Message) -> None:
     """
     Обработка команды /start.
@@ -36,7 +30,6 @@ def is_relevant_message(message_text: str, chat_type: str) -> bool:
         return bool(PATTERN.search(message_text))
     return True
 
-@router.message()
 async def respond(message: Message) -> None:
     """
     Обработка текстовых сообщений с использованием DeepSeek.

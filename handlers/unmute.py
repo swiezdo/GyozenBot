@@ -1,6 +1,5 @@
 from aiogram import Bot
 from aiogram.types import Message, ChatPermissions
-from aiogram.filters import Command
 
 async def is_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
     """

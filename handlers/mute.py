@@ -10,7 +10,6 @@ async def is_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
     admins = await bot.get_chat_administrators(chat_id)
     return any(admin.user.id == user_id for admin in admins)
 
-@router.message(Command("mute"))
 async def mute_user(message: Message, bot: Bot) -> None:
     """
     Команда /mute для отключения возможности отправки сообщений (reply).

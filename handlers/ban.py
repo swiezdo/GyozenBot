@@ -7,7 +7,6 @@ async def is_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
     admins = await bot.get_chat_administrators(chat_id)
     return any(admin.user.id == user_id for admin in admins)
 
-@router.message(Command("ban"))
 async def ban_user(message: Message, bot: Bot) -> None:
     """ Команда /ban для бана пользователей через reply. """
     chat_id = message.chat.id

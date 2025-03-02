@@ -1,43 +1,39 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+from aiogram import Bot
+from aiogram.types import Message
+from aiogram.filters import Command
 
-# Команда /ban для бана пользователей через ответ на сообщение (reply)
-async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
-    user_id = update.effective_user.id
+async def is_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
+    """ Проверяет, является ли пользователь администратором. """
+    admins = await bot.get_chat_administrators(chat_id)
+    return any(admin.user.id == user_id for admin in admins)
 
-    # Получаем список администраторов и владельца группы
-    admins = await context.bot.get_chat_administrators(chat_id)
-    is_admin = False
-    
-    # Проверяем, является ли пользователь администратором или владельцем группы
-    for admin in admins:
-        if admin.user.id == user_id:
-            is_admin = True
-            break
+@router.message(Command("ban"))
+async def ban_user(message: Message, bot: Bot) -> None:
+    """ Команда /ban для бана пользователей через reply. """
+    chat_id = message.chat.id
+    user_id = message.from_user.id
 
-    # Если пользователь не администратор и не владелец группы — отказ
-    if not is_admin:
-        await update.message.reply_text("У вас нет прав администратора или владельца группы.")
-        return
-    
-    # Проверяем, используется ли команда в ответе на сообщение (reply)
-    if not update.message.reply_to_message:
-        await update.message.reply_text("Эту команду нужно использовать в ответе на сообщение.")
+    # Проверяем, ответил ли пользователь на сообщение
+    if not message.reply_to_message:
+        await message.reply("Эту команду нужно использовать в ответе на сообщение.")
         return
 
-    # Получаем пользователя, на сообщение которого был сделан ответ
-    user_to_ban = update.message.reply_to_message.from_user
-    
-    # Проверяем, не является ли пользователь администратором или владельцем группы
-    for admin in admins:
-        if admin.user.id == user_to_ban.id:
-            await update.message.reply_text("Нельзя забанить администратора или владельца группы.")
-            return
-    
+    # Получаем пользователя, которого хотим забанить
+    user_to_ban = message.reply_to_message.from_user
+
+    # Проверяем, является ли отправитель администратором
+    if not await is_admin(bot, chat_id, user_id):
+        await message.reply("У вас нет прав администратора.")
+        return
+
+    # Проверяем, является ли жертва администратором
+    if await is_admin(bot, chat_id, user_to_ban.id):
+        await message.reply("Нельзя забанить администратора.")
+        return
+
     # Выполняем бан
     try:
-        await context.bot.ban_chat_member(chat_id, user_to_ban.id)
-        await update.message.reply_text(f"{user_to_ban.full_name} был(-а) забанен.")
+        await bot.ban_chat_member(chat_id, user_to_ban.id)
+        await message.reply(f"{user_to_ban.full_name} был(-а) забанен.")
     except Exception as e:
-        await update.message.reply_text(f"Не удалось забанить {user_to_ban.full_name}. Ошибка: {e}")
+        await message.reply(f"Ошибка: {e}")

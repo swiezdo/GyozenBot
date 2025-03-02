@@ -1,44 +1,44 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+from aiogram import Bot
+from aiogram.types import Message
+from aiogram.filters import Command
 
-# Команда /kick для исключения пользователей через ответ на сообщение (reply)
-async def kick_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
-    user_id = update.effective_user.id
+async def is_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
+    """
+    Проверяет, является ли пользователь администратором или владельцем группы.
+    """
+    admins = await bot.get_chat_administrators(chat_id)
+    return any(admin.user.id == user_id for admin in admins)
 
-    # Получаем список администраторов и владельца группы
-    admins = await context.bot.get_chat_administrators(chat_id)
-    is_admin = False
-    
-    # Проверяем, является ли пользователь администратором или владельцем группы
-    for admin in admins:
-        if admin.user.id == user_id:
-            is_admin = True
-            break
+@router.message(Command("kick"))
+async def kick_user(message: Message, bot: Bot) -> None:
+    """
+    Команда /kick для исключения пользователя без бана.
+    """
+    chat_id = message.chat.id
+    user_id = message.from_user.id
 
-    # Если пользователь не администратор и не владелец группы — отказ
-    if not is_admin:
-        await update.message.reply_text("У вас нет прав администратора или владельца группы.")
-        return
-    
-    # Проверяем, используется ли команда в ответе на сообщение (reply)
-    if not update.message.reply_to_message:
-        await update.message.reply_text("Эту команду нужно использовать в ответе на сообщение.")
+    # Проверяем, является ли отправитель администратором
+    if not await is_admin(bot, chat_id, user_id):
+        await message.reply("У вас нет прав администратора или владельца группы.")
         return
 
-    # Получаем пользователя, на сообщение которого был сделан ответ
-    user_to_kick = update.message.reply_to_message.from_user
-    
-    # Проверяем, не является ли пользователь администратором или владельцем группы
-    for admin in admins:
-        if admin.user.id == user_to_kick.id:
-            await update.message.reply_text("Нельзя исключить администратора или владельца группы.")
-            return
-    
-    # Выполняем исключение
+    # Проверяем, использована ли команда в ответе на сообщение (reply)
+    if not message.reply_to_message:
+        await message.reply("Эту команду нужно использовать в ответе на сообщение.")
+        return
+
+    # Получаем пользователя, которого нужно исключить
+    user_to_kick = message.reply_to_message.from_user
+
+    # Проверяем, не является ли он администратором
+    if await is_admin(bot, chat_id, user_to_kick.id):
+        await message.reply("Нельзя исключить администратора или владельца группы.")
+        return
+
+    # Выполняем исключение (без бана)
     try:
-        await context.bot.ban_chat_member(chat_id, user_to_kick.id)
-        await context.bot.unban_chat_member(chat_id, user_to_kick.id)
-        await update.message.reply_text(f"{user_to_kick.full_name} был(-а) исключён.")
+        await bot.ban_chat_member(chat_id, user_to_kick.id, revoke_messages=False)  # Исключаем (без удаления сообщений)
+        await bot.unban_chat_member(chat_id, user_to_kick.id)  # Разбан (чтобы мог сразу вернуться)
+        await message.reply(f"{user_to_kick.full_name} был(-а) исключён, но может вернуться.")
     except Exception as e:
-        await update.message.reply_text(f"Не удалось исключить {user_to_kick.full_name}. Ошибка: {e}")
+        await message.reply(f"Не удалось исключить {user_to_kick.full_name}. Ошибка: {e}")

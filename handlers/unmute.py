@@ -1,42 +1,42 @@
-# Команда /unmute для восстановления возможности отправки сообщений (reply)
-from telegram import Update
-from telegram.ext import ContextTypes
-import time
+from aiogram import Bot
+from aiogram.types import Message, ChatPermissions
+from aiogram.filters import Command
 
-async def unmute_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
-    user_id = update.effective_user.id
+async def is_admin(bot: Bot, chat_id: int, user_id: int) -> bool:
+    """
+    Проверяет, является ли пользователь администратором или владельцем группы.
+    """
+    admins = await bot.get_chat_administrators(chat_id)
+    return any(admin.user.id == user_id for admin in admins)
 
-    # Получаем список администраторов и владельца группы
-    admins = await context.bot.get_chat_administrators(chat_id)
-    is_admin = False
-    
-    # Проверяем, является ли пользователь администратором или владельцем группы
-    for admin in admins:
-        if admin.user.id == user_id:
-            is_admin = True
-            break
+@router.message(Command("unmute"))
+async def unmute_user(message: Message, bot: Bot) -> None:
+    """
+    Команда /unmute для восстановления возможности отправки сообщений (reply).
+    """
+    chat_id = message.chat.id
+    user_id = message.from_user.id
 
-    # Если пользователь не администратор и не владелец группы — отказ
-    if not is_admin:
-        await update.message.reply_text("У вас нет прав администратора или владельца группы.")
-        return
-    
-    # Проверяем, используется ли команда в ответе на сообщение (reply)
-    if not update.message.reply_to_message:
-        await update.message.reply_text("Эту команду нужно использовать в ответе на сообщение.")
+    # Проверяем, является ли отправитель администратором
+    if not await is_admin(bot, chat_id, user_id):
+        await message.reply("У вас нет прав администратора или владельца группы.")
         return
 
-    # Получаем пользователя, на сообщение которого был сделан ответ
-    user_to_unmute = update.message.reply_to_message.from_user
-    
-    # Выполняем unmute (восстанавливаем все права)
+    # Проверяем, использована ли команда в ответе на сообщение (reply)
+    if not message.reply_to_message:
+        await message.reply("Эту команду нужно использовать в ответе на сообщение.")
+        return
+
+    # Получаем пользователя, которого нужно размутить
+    user_to_unmute = message.reply_to_message.from_user
+
+    # Выполняем unmute (восстанавливаем права)
     try:
-        await context.bot.restrict_chat_member(
-            chat_id, 
+        await bot.restrict_chat_member(
+            chat_id,
             user_to_unmute.id,
-            permissions={'can_send_messages': True}
+            permissions=ChatPermissions(can_send_messages=True)
         )
-        await update.message.reply_text(f"{user_to_unmute.full_name} был(-а) размучен.")
+        await message.reply(f"{user_to_unmute.full_name} был(-а) размучен.")
     except Exception as e:
-        await update.message.reply_text(f"Не удалось размутить {user_to_unmute.full_name}. Ошибка: {e}")
+        await message.reply(f"Не удалось размутить {user_to_unmute.full_name}. Ошибка: {e}")

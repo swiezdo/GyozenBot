@@ -1,16 +1,15 @@
-# deepseek_client.py
-from openai import OpenAI
-from dialogue_styles import gyozen_style  # Импорт стиля из dialogue_styles.py
-from config import DEEPSEEK_API_KEY
 import logging
+from openai import OpenAI
+from dialogue_styles import gyozen_style
+from config import DEEPSEEK_API_KEY
 
-# Инициализация клиента для DeepSeek
+# Инициализация клиента DeepSeek
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
-def get_response(prompt: str) -> str:
+async def get_response(prompt: str) -> str:
     """
-    Получает ответ от DeepSeek с учётом стиля Гёдзена.
-    
+    Асинхронный запрос к DeepSeek с учётом стиля Гёдзена.
+
     :param prompt: Вопрос от пользователя
     :return: Ответ в стиле Гёдзена
     """
@@ -22,7 +21,7 @@ def get_response(prompt: str) -> str:
                 {"role": "user", "content": prompt}
             ],
             stream=False,
-            temperature=1.3,
+            temperature=1.3,  # Стабильность ответов
             max_tokens=1000
         )
         return response.choices[0].message.content.strip()

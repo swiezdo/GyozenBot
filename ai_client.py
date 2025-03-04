@@ -3,7 +3,7 @@ from openai import OpenAI
 from dialogue_styles import gyozen_style
 from config import AI_PROVIDER, DEEPSEEK_API_KEY, OPENAI_API_KEY, TEMPERATURE, MAX_TOKENS
 
-# Определяем API-клиент и модель
+# Подключаем API-клиента в зависимости от выбранного провайдера
 if AI_PROVIDER == "deepseek":
     client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
     model_name = "deepseek-chat"
@@ -15,10 +15,10 @@ else:
 
 async def get_response(prompt: str) -> str:
     """
-    Асинхронный запрос к AI (DeepSeek или OpenAI).
-    
-    :param prompt: Вопрос от пользователя
-    :return: Ответ в стиле Гёдзена
+    Отправляет запрос к AI (DeepSeek или OpenAI) и получает ответ.
+
+    :param prompt: Вопрос от пользователя.
+    :return: Сгенерированный AI ответ в стиле Гёдзена.
     """
     try:
         response = client.chat.completions.create(

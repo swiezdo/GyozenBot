@@ -2,10 +2,11 @@ import time
 import random
 import re
 from aiogram.types import Message
-from deepseek_client import get_response
+from ai_client import get_response
 from waiting_phrases import WAITING_PHRASES
+from image_generator import generate_image
 
-# === Конфигурация ===
+# = = = Конфигурация = = =
 TIME_THRESHOLD = 60  # 60 секунд
 PATTERN = re.compile(r"г[ёе]д[зс][еэ]н", re.IGNORECASE)
 
@@ -32,20 +33,38 @@ def is_relevant_message(message_text: str, chat_type: str) -> bool:
 
 async def respond(message: Message) -> None:
     """
-    Обработка текстовых сообщений с использованием DeepSeek.
+    Обработка текстовых сообщений с использованием ИИ.
     """
     message_time = message.date.timestamp()
-    user_message = message.text
+    user_message = message.text.lower().strip()
     chat_type = message.chat.type
 
     # Проверка времени и релевантности сообщения
     if not is_recent_message(message_time) or not is_relevant_message(user_message, chat_type):
         return
 
-    # Выбираем случайную фразу ожидания
+    # = = = Проверка запроса на генерацию изображения = = =
+    if re.search(r"г[ёе]дзен.*создай изображение", user_message):
+        prompt = user_message.split("создай изображение", 1)[-1].strip()
+
+        if not prompt:
+            await message.reply("Опиши, что ты хочешь увидеть!")
+            return
+
+        await message.reply("Генерирую изображение... 🎨🔄")
+
+        # Генерация изображения
+        image_url = await generate_image(prompt)
+        if image_url:
+            await message.reply_photo(image_url, caption="Вот твое изображение! 🎭")
+        else:
+            await message.reply("Произошла ошибка при создании изображения. 😢")
+        return  # Завершаем обработку, если запрос был связан с изображением
+
+    # = = = Обычная генерация текста = = =
     waiting_phrase = random.choice(WAITING_PHRASES)
     waiting_message = await message.answer(waiting_phrase)
 
     # Получаем и отправляем ответ
-    response = await get_response(user_message)  # Делаем вызов асинхронным!
+    response = await get_response(user_message)
     await waiting_message.edit_text(response)

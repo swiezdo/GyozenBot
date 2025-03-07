@@ -31,16 +31,16 @@ def is_relevant_message(message: Message) -> bool:
     if chat_type == "private":
         return message.from_user.id == OWNER_ID
 
-    # Проверяем группу и тему
+    # Группы и супергруппы
     if chat_type in ["group", "supergroup"]:
         if message.chat.id != GROUP_ID:  # Бот работает только в одной группе
             return False
 
-        # Если в группе есть темы, сообщение должно быть в указанной теме
-        if message.is_topic_message and message.message_thread_id != TOPIC_ID:
-            return False
-
-        return True
+        # Если в группе есть темы, бот должен отвечать ТОЛЬКО в указанной теме
+        if message.is_topic_message:
+            return message.message_thread_id == TOPIC_ID
+        else:
+            return False  # Если сообщение не из темы — бот игнорирует
 
     return False  # Остальные случаи игнорируем
 
@@ -58,7 +58,7 @@ async def respond(message: Message) -> None:
         return
 
     # Проверка генерации изображений
-    match = re.search(r"г[ёе]д[зс][еэ]н.*создай изображение", user_message, re.IGNORECASE)
+    match = re.search(r"г[ёе]д[зс][еэ]н.*нарисуй", user_message, re.IGNORECASE)
     if match:
         prompt = user_message[match.end():].strip()
         if not prompt:

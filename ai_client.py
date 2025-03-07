@@ -1,7 +1,7 @@
 import logging
 from openai import OpenAI
-from dialogue_styles import gyozen_style
-from config import AI_PROVIDER, DEEPSEEK_API_KEY, OPENAI_API_KEY, TEMPERATURE, MAX_TOKENS
+from config import AI_PROVIDER, DEEPSEEK_API_KEY, OPENAI_API_KEY, TEMPERATURE, MAX_TOKENS, FINE_TUNED_MODEL
+from dialogue_styles import gyozen_style  # Подключаем стиль Гёдзена
 
 # Подключаем API-клиента в зависимости от выбранного провайдера
 if AI_PROVIDER == "deepseek":
@@ -9,24 +9,32 @@ if AI_PROVIDER == "deepseek":
     model_name = "deepseek-chat"
 elif AI_PROVIDER == "openai":
     client = OpenAI(api_key=OPENAI_API_KEY)
-    model_name = "gpt-4o"
+    model_name = FINE_TUNED_MODEL if FINE_TUNED_MODEL else "gpt-4o"
 else:
     raise ValueError("Некорректное значение AI_PROVIDER в config.py. Используйте 'deepseek' или 'openai'.")
 
 async def get_response(prompt: str) -> str:
     """
-    Отправляет запрос к AI (DeepSeek или OpenAI) и получает ответ.
+    Отправляет запрос к AI (Fine-Tuned модель, стандартный OpenAI или DeepSeek) и получает ответ.
 
     :param prompt: Вопрос от пользователя.
-    :return: Сгенерированный AI ответ в стиле Гёдзена.
+    :return: Сгенерированный AI-ответ.
     """
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
+        # Определяем, какой формат сообщений использовать
+        if AI_PROVIDER == "openai" and FINE_TUNED_MODEL:
+            # Если выбран OpenAI и есть Fine-Tuned модель, используем только user prompt
+            messages = [{"role": "user", "content": prompt}]
+        else:
+            # Если используется обычный GPT-4o или DeepSeek, добавляем стиль Гёдзена
+            messages = [
                 {"role": "system", "content": gyozen_style},
                 {"role": "user", "content": prompt}
-            ],
+            ]
+
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
             stream=False,
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS
